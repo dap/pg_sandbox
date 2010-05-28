@@ -60,7 +60,7 @@ change_cluster () {
     # TODO add routine to unset the PG* environment variables/reset them to their original values
     export PG_SB_CURRENT_CLUSTER=`pwd`/$1
     export PGDATA=$PG_SB_CURRENT_CLUSTER/data
-    export PGPORT=`awk '/^port = / {printf "%s", $3'} $PGDATA/postgresql.conf`
+    export PGPORT=`awk '/^port = / {printf "%s", $3}' $PGDATA/postgresql.conf`
     export PGHOST=$PG_SB_CURRENT_CLUSTER/run
     set_ps $1
 }
@@ -117,25 +117,45 @@ deactivate () {
     fi
 }
 
-# unset irrelavent variables
-deactivate nondestructive
+initialize () {
+    # unset irrelavent variables
+    deactivate nondestructive
 
-export VIRTUAL_ENV=`pwd`
+    if [ ! "x$1" = "x" ] ; then
+        export VIRTUAL_ENV="$1"
+    fi
 
-if [ ! "x$1" = "x" ] ; then
-    export VIRTUAL_ENV="$1"
+    _OLD_VIRTUAL_PATH="$PATH"
+    # TODO figure out the path to the postgres bin
+    PATH="$VIRTUAL_ENV/bin:/usr/lib/postgresql/8.4/bin:$PATH"
+    export PATH
+
+    _OLD_VIRTUAL_PS1="$PS1"
+    set_ps default
+
+    # This should detect bash and zsh, which have a hash command that must
+    # be called to get it to forget past commands.  Without forgetting
+    # past commands the $PATH changes we made may not be respected
+    if [ -n "$BASH" -o -n "$ZSH_VERSION" ] ; then
+        hash -r
+    fi
+}
+
+# If we were invoked directly, output a message describing correct usage
+if [ "`basename \"$0\"`" = "pg_sandbox.sh" ] ; then
+    echo $0
+    echo "Error: pg_sandbox.sh cannot be run directly."
+    echo "       Invoke \"source /path/to/pg_sandbox.sh\" in *bash*"
+else
+    # Set path to pg_sandbox utility scripts
+    INIT_PATH=`dirname $BASH_ARGV`
+
+    # If not fully qualified path, prepend pwd
+    if [ ! "`echo $INIT_PATH | awk -F '' '{printf "%s", $1}'`" = "/" ] ; then
+        INIT_PATH="`pwd`/$INIT_PATH"
+    fi
+
+    # Initialize environment
+    initialize $INIT_PATH
 fi
 
-_OLD_VIRTUAL_PATH="$PATH"
-PATH="$VIRTUAL_ENV/bin:/usr/lib/postgresql/8.4/bin:$PATH"
-export PATH
-
-_OLD_VIRTUAL_PS1="$PS1"
-set_ps default
-
-# This should detect bash and zsh, which have a hash command that must
-# be called to get it to forget past commands.  Without forgetting
-# past commands the $PATH changes we made may not be respected
-if [ -n "$BASH" -o -n "$ZSH_VERSION" ] ; then
-    hash -r
-fi
