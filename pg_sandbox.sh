@@ -58,6 +58,7 @@ change_cluster () {
 	return 1
     fi
     # TODO add routine to unset the PG* environment variables/reset them to their original values
+    # TODO improve handling of fully-qualified and relative cluster paths
     export PG_SB_CURRENT_CLUSTER=`pwd`/$1
     export PGDATA=$PG_SB_CURRENT_CLUSTER/data
     export PGPORT=`awk '/^port = / {printf "%s", $3}' $PGDATA/postgresql.conf`
@@ -141,21 +142,25 @@ initialize () {
     fi
 }
 
+# If we were invoked interactively, initialize pg_sandbox environment
+case "$-" in
+    *i*) 
+        # TODO abstract path qualification into utility function
+        # Set path to pg_sandbox utility scripts
+        INIT_PATH=`dirname $BASH_ARGV`
+
+        # If not fully qualified path, prepend pwd
+        if [ ! "`echo $INIT_PATH | awk -F '' '{printf "%s", $1}'`" = "/" ] ; then
+            INIT_PATH="`pwd`/$INIT_PATH"
+        fi
+
+        # Initialize environment
+        initialize $INIT_PATH
+        ;;
 # If we were invoked directly, output a message describing correct usage
-if [ "`basename \"$0\"`" = "pg_sandbox.sh" ] ; then
-    echo $0
-    echo "Error: pg_sandbox.sh cannot be run directly."
-    echo "       Invoke \"source /path/to/pg_sandbox.sh\" in *bash*"
-else
-    # Set path to pg_sandbox utility scripts
-    INIT_PATH=`dirname $BASH_ARGV`
-
-    # If not fully qualified path, prepend pwd
-    if [ ! "`echo $INIT_PATH | awk -F '' '{printf "%s", $1}'`" = "/" ] ; then
-        INIT_PATH="`pwd`/$INIT_PATH"
-    fi
-
-    # Initialize environment
-    initialize $INIT_PATH
-fi
+    *)  
+        echo "Error: pg_sandbox.sh cannot be run directly."
+        echo "       Invoke \"source /path/to/pg_sandbox.sh\" in *bash*"
+        ;;
+esac
 
