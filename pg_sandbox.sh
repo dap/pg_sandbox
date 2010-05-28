@@ -42,14 +42,15 @@ create_cluster () {
 	return 1
     fi
 
+    NEW_CLUSTER_PATH=$(qualify_path $1)
     # First create the directory structure
-    mkdir -p $1/data $1/run $1/log
+    mkdir -p $NEW_CLUSTER_PATH/data $NEW_CLUSTER_PATH/run $NEW_CLUSTER_PATH/log
 
     # Then, initialize the cluster
-    initdb -U $2 -D $1/data
+    initdb -U $2 -D $NEW_CLUSTER_PATH/data
 
     # Set the port in the config file
-    sed -i "s/^#port = 5432/port = $3/" $1/data/postgresql.conf
+    sed -i "s/^#port = 5432/port = $3/" $NEW_CLUSTER_PATH/data/postgresql.conf
 }
 
 change_cluster () {
@@ -58,8 +59,8 @@ change_cluster () {
 	return 1
     fi
     # TODO add routine to unset the PG* environment variables/reset them to their original values
-    # TODO improve handling of fully-qualified and relative cluster paths
-    export PG_SB_CURRENT_CLUSTER=`pwd`/$1
+    PG_SB_CURRENT_CLUSTER=$(qualify_path $1)
+    export PG_SB_CURRENT_CLUSTER
     export PGDATA=$PG_SB_CURRENT_CLUSTER/data
     export PGPORT=`awk '/^port = / {printf "%s", $3}' $PGDATA/postgresql.conf`
     export PGHOST=$PG_SB_CURRENT_CLUSTER/run
@@ -85,6 +86,17 @@ set_ps () {
             fi
             ;;
     esac
+}
+
+qualify_path () {
+    QUALIFIED_PATH=$1
+
+    # If not fully qualified path, prepend pwd
+    if [ ! "`echo -n $QUALIFIED_PATH | awk -F '' '{printf "%s", \$1}'`" = "/" ] ; then
+        QUALIFIED_PATH="`pwd`/$QUALIFIED_PATH"
+    fi
+
+    echo -n $QUALIFIED_PATH
 }
 
 deactivate () {
@@ -114,6 +126,7 @@ deactivate () {
         unset create_cluster
         unset change_cluster 
         unset set_ps
+        unset qualify_path
         unset deactivate
     fi
 }
@@ -142,23 +155,16 @@ initialize () {
     fi
 }
 
-# If we were invoked interactively, initialize pg_sandbox environment
 case "$-" in
-    *i*) 
-        # TODO abstract path qualification into utility function
+    *i*) # If we were invoked interactively, initialize pg_sandbox environment
         # Set path to pg_sandbox utility scripts
         INIT_PATH=`dirname $BASH_ARGV`
 
-        # If not fully qualified path, prepend pwd
-        if [ ! "`echo $INIT_PATH | awk -F '' '{printf "%s", $1}'`" = "/" ] ; then
-            INIT_PATH="`pwd`/$INIT_PATH"
-        fi
-
-        # Initialize environment
-        initialize $INIT_PATH
+        # Initialize environment using fully qualified path
+        initialize $(qualify_path $INIT_PATH)
         ;;
-# If we were invoked directly, output a message describing correct usage
-    *)  
+
+    *)  # If we were invoked directly, output a message describing correct usage
         echo "Error: pg_sandbox.sh cannot be run directly."
         echo "       Invoke \"source /path/to/pg_sandbox.sh\" in *bash*"
         ;;
