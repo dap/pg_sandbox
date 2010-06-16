@@ -1,0 +1,4 @@
+pg_sandbox - a bash tool to manage PostgreSQL clusters
+
+Right now it doesn't do much. Eventually I hope to support
+deploying replication setups like the venerable MySQL Sandbox
