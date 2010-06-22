@@ -1,3 +1,6 @@
+#!/bin/bash
+# vim: ts=4 sts=4 et sw=4
+
 # This file must be used with "source pg_sandbox.sh" *from bash*
 # you cannot run it directly
 
@@ -27,19 +30,9 @@ pg_sandbox () {
 }
 
 create_cluster () {
-    if [ "x$1" = "x" ] ; then
-	echo "Usage: create_cluster [/path/to/cluster] [superuser name] [port]."
-	return 1
-    fi
-
-    if [ "x$2" = "x" ] ; then
-	echo "Usage: create_cluster [/path/to/cluster] [superuser name] [port]."
-	return 1
-    fi
-
-    if [ "x$3" = "x" ] ; then
-	echo "Usage: create_cluster [/path/to/cluster] [superuser name] [port]."
-	return 1
+    if [[ "x$1" = "x" || "x$2" = "x"  || "x$3" = "x" ]] ; then
+        echo "Usage: create_cluster [/path/to/cluster] [superuser name] [port]."
+        return 1
     fi
 
     NEW_CLUSTER_PATH=$(qualify_path $1)
@@ -55,8 +48,8 @@ create_cluster () {
 
 change_cluster () {
     if [ "x$1" = "x" ] ; then
-	echo "Error: You must specify a cluster directory."
-	return 1
+        echo "Error: You must specify a cluster directory."
+        return 1
     fi
     # TODO add routine to unset the PG* environment variables/reset them to their original values
     PG_SB_CURRENT_CLUSTER=$(qualify_path $1)
