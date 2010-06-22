@@ -1,4 +1,4 @@
-# This file must be used with "source scripts/rc.sh" *from bash*
+# This file must be used with "source pg_sandbox.sh" *from bash*
 # you cannot run it directly
 
 pg_sb () {
@@ -132,7 +132,7 @@ deactivate () {
 }
 
 initialize () {
-    # unset irrelavent variables
+    # unset irrelevant variables
     deactivate nondestructive
 
     if [ ! "x$1" = "x" ] ; then
